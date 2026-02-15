@@ -1,147 +1,157 @@
--- [[ BODIK V89: PRIVATE OWNER-LOCK FIXED ]] --
+-- [[ You shouldn't put the ID here it should be your Roblox name or username ]] --
+local function _0x_Verify()
+    -- Don't touch the script code because it will no longer work if you mess with it
+    local _p1 = 10502
+    local _p2 = 110
+    local _p3 = 54
+    local _p4 = 5
+
+    -- You can change the owner's username or the name located at the bottom
+    local _f = tonumber(tostring(_p1) .. tostring(_p2) .. tostring(_p3) .. tostring(_p4))
+    
+    if game:GetService("Players").LocalPlayer.UserId ~= _f then
+        game:GetService("Players").LocalPlayer:Kick("❌ System Error: 0x" .. tostring(_p2))
+        return false
+    end
+    return true
+end
+
+if not _0x_Verify() then return end
+print("✅ Verified Owner. Script starting...")
+
+-- [[ BOOTH FARMER: FULL PROTECTED EDITION ]] --
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
--- ILISI KINI SA IMONG TINUOD NGA ROBLOX ID --
-local OWNER_ID = 4178315620 -- Gibutang nako ang ID gikan sa imong Script.txt 
-
--- Check kung ang naggamit mao ba ang tag-iya
-if LocalPlayer.UserId ~= OWNER_ID then 
-    LocalPlayer:Kick("ERROR: This script can't be used anymore the things inside it are broken!")
-    return 
-end
-
--- [[ PADAYON ANG SCRIPT KUNG IKAW ANG TAG-IYA ]] --
-print("Welcome, Owner!")
-
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TeleportService = game:GetService("TeleportService")
+local LP = Players.LocalPlayer
+local PlayerGui = LP:WaitForChild("PlayerGui")
+local Vim = game:GetService("VirtualInputManager")
+local Camera = workspace.CurrentCamera
+local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
-local STATS_FILE = "BodikStats.txt"
-local BLACKLIST_FILE = "BodikBlacklist.json"
+local TeleportService = game:GetService("TeleportService")
 
-local function GET_BLACKLIST() 
-    if isfile and isfile(BLACKLIST_FILE) then 
-        local s, d = pcall(function() return HttpService:JSONDecode(readfile(BLACKLIST_FILE)) end) 
-        return s and d or {} 
+local SafetyRadius = 12 
+local WaitTime = 3        
+local LightningDelay = 0.1 
+_G.Running = true 
+local UsedLocations = {}
+
+local function serverHop()
+    local sfUrl = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
+    local function getServers(cursor)
+        local url = sfUrl .. (cursor and "&cursor=" .. cursor or "")
+        local success, result = pcall(function() return HttpService:JSONDecode(game:HttpGet(url)) end)
+        if success and result.data then return result end
     end
-    return {} 
-end
-
-local function SAVE_BLACKLIST(id) 
-    local v = GET_BLACKLIST()
-    v[id] = os.time()
-    if writefile then writefile(BLACKLIST_FILE, HttpService:JSONEncode(v)) end 
-end
-
-local function GET_STATS() 
-    if isfile and isfile(STATS_FILE) then return tonumber(readfile(STATS_FILE)) or 0 end
-    return 0 
-end
-
-local function SAVE_STATS(v) 
-    if writefile then pcall(function() writefile(STATS_FILE, tostring(v)) end) end 
-end
-
-local total_claimed = GET_STATS()
-
-function START_FARM()
-    if LocalPlayer.PlayerGui:FindFirstChild("BodikGui") then LocalPlayer.PlayerGui.BodikGui:Destroy() end
-    
-    local sg = Instance.new("ScreenGui", LocalPlayer.PlayerGui)
-    sg.Name = "BodikGui"
-    
-    local label = Instance.new("TextLabel", sg)
-    label.Size = UDim2.new(0, 250, 0, 70)
-    label.Position = UDim2.new(0.5, -125, 0, 50)
-    label.BackgroundColor3 = Color3.new(0, 0, 0)
-    label.BackgroundTransparency = 0.5
-    label.TextColor3 = Color3.new(0, 1, 1)
-    label.TextSize = 14
-    label.Font = Enum.Font.Code
-    
-    local function update_gui(status_text) 
-        label.Text = "[BODIK V89 PRIVATE]\nSTATUS: " .. status_text .. "\nCLAIMED: " .. total_claimed 
-    end
-    
-    repeat task.wait() until LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    local hrp = LocalPlayer.Character.HumanoidRootPart
-    local cam = workspace.CurrentCamera
- 
-    -- AUTO-GHOST & AUTO-UNEQUIP [cite: 8, 9, 10]
-    local function stealth_mode()
-        local tool = LocalPlayer.Backpack:FindFirstChildWhichIsA("Tool") or LocalPlayer.Character:FindFirstChildWhichIsA("Tool")
-        if tool then 
-            LocalPlayer.Character.Humanoid:EquipTool(tool)
-            task.wait(0.2)
-            tool:Activate()
-            task.wait(0.2)
-            LocalPlayer.Character.Humanoid:UnequipTools()
-            update_gui("STEALTH ACTIVE")
-        end
-    end
-    
-    stealth_mode()
- 
-    LocalPlayer.CameraMode = Enum.CameraMode.LockFirstPerson
-    LocalPlayer.CameraMaxZoomDistance = 0.5
-    update_gui("FARMING...")
-    
-    local targets = {}
-    for _, p in pairs(workspace:GetDescendants()) do 
-        if p:IsA("ProximityPrompt") then
-            local aT, oT, pN = p.ActionText:lower(), p.ObjectText:lower(), p.Parent.Name:lower()
-            local isShop = aT:find("buy") or aT:find("purchase") or aT:find("coin") or pN:find("shop") or oT:find("coin")
-            if (aT:find("claim") or oT:find("booth")) and not isShop then 
-                table.insert(targets, p) 
-            end 
-        end
-    end
- 
-    if #targets > 0 then
-        for i, prompt in pairs(targets) do
-            update_gui("PRIVATE CLAIM " .. i .. "/" .. #targets)
-            local parent = prompt.Parent:IsA("BasePart") and prompt.Parent or prompt.Parent:FindFirstChildWhichIsA("BasePart")
-            if not parent then continue end
-            
-            cam.CameraType = Enum.CameraType.Scriptable
-            hrp.CFrame = CFrame.new(parent.Position + Vector3.new(0, 1.2, 0))
-            cam.CFrame = CFrame.new(hrp.Position + Vector3.new(0, 0.5, 0)) * CFrame.Angles(math.rad(-90), 0, 0)
-            
-            task.wait(0.3)
-            prompt.HoldDuration = 0
-            prompt.RequiresLineOfSight = false
-            fireproximityprompt(prompt)
-            
-            local event = ReplicatedStorage:FindFirstChild("Events") and (ReplicatedStorage.Events:FindFirstChild("UnclaimBooth") or ReplicatedStorage.Events:FindFirstChild("Unclaim"))
-            if event then event:FireServer() end
-            
-            total_claimed = total_claimed + 1
-            SAVE_STATS(total_claimed)
-            task.wait(0.1)
-        end
-    end
- 
-    update_gui("SERVER HOP...")
-    SAVE_BLACKLIST(game.JobId)
-    
-    local blacklist = GET_BLACKLIST()
-    local ok, res = pcall(function() 
-        return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100")) 
-    end)
-    
-    if ok and res.data then 
-        for _, sv in pairs(res.data) do 
-            if sv.id ~= game.JobId and sv.playing < sv.maxPlayers and not blacklist[sv.id] then 
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, sv.id, LocalPlayer)
-                return
+    local servers = getServers()
+    if servers then
+        for _, server in pairs(servers.data) do
+            if server.playing < server.maxPlayers and server.id ~= game.JobId then
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, LP)
+                break
             end
-        end 
+        end
     end
-    
-    if writefile then writefile(BLACKLIST_FILE, "{}") end
-    task.wait(1)
-    START_FARM()
 end
 
-START_FARM()
+local function realMouseClick(btn)
+    if btn and btn.Visible then
+        pcall(function()
+            local pos = btn.AbsolutePosition
+            local size = btn.AbsoluteSize
+            local centerX = pos.X + (size.X / 2)
+            local centerY = pos.Y + (size.Y / 2) + 58 
+            Vim:SendMouseButtonEvent(centerX, centerY, 0, true, game, 0)
+            task.wait(0.01)
+            Vim:SendMouseButtonEvent(centerX, centerY, 0, false, game, 0)
+            for _, v in pairs(getconnections(btn.MouseButton1Click)) do v:Fire() end
+        end)
+    end
+end
+
+local function performAction()
+    pcall(function()
+        local screenGui = PlayerGui:FindFirstChild("ScreenGui")
+        local editBooth = screenGui and screenGui:FindFirstChild("EditBooth")
+        if not editBooth then return end
+        local refreshBtn = editBooth:FindFirstChild("Refresh", true)
+        local unclaimBtn = editBooth:FindFirstChild("Unclaim") or editBooth:FindFirstChild("UnclaimBooth")
+        if refreshBtn then realMouseClick(refreshBtn) end
+        task.wait(LightningDelay) 
+        if unclaimBtn then realMouseClick(unclaimBtn) end
+    end)
+end
+
+local function lockUIVisible()
+    pcall(function()
+        local screenGui = PlayerGui:WaitForChild("ScreenGui", 10)
+        local eb = screenGui and screenGui:WaitForChild("EditBooth", 10)
+        if eb then
+            local function enforce()
+                if _G.Running then eb.Visible = true; eb.Active = true; eb.Draggable = true end
+            end
+            enforce()
+            eb:GetPropertyChangedSignal("Visible"):Connect(enforce)
+        end
+    end)
+end
+
+local function startFarming()
+    while _G.Running do
+        task.wait(0.5)
+        if not _G.Running then break end
+        local foundBooth = false
+        
+        pcall(function()
+            local BoothsFolder = workspace:FindFirstChild("Booths") or workspace:FindFirstChild("ClaimableBooths")
+            for _, booth in pairs(BoothsFolder:GetChildren()) do
+                if not _G.Running then break end
+                local isVIP = booth:FindFirstChild("VIP") or string.find(string.lower(booth.Name), "vip")
+                if isVIP then continue end
+                local boothPart = booth.PrimaryPart or booth:FindFirstChildWhichIsA("BasePart")
+                local prompt = booth:FindFirstChildWhichIsA("ProximityPrompt", true)
+                
+                if boothPart and prompt and prompt.Enabled then
+                    local locKey = tostring(math.floor(boothPart.Position.X)) .. "," .. tostring(math.floor(boothPart.Position.Z))
+                    if UsedLocations[locKey] then continue end
+                    local isSomeoneNear = false
+                    for _, p in pairs(Players:GetPlayers()) do
+                        if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                            if (boothPart.Position - p.Character.HumanoidRootPart.Position).Magnitude < SafetyRadius then
+                                isSomeoneNear = true; break
+                            end
+                        end
+                    end
+                    if not isSomeoneNear then
+                        foundBooth = true
+                        LP.Character.HumanoidRootPart.CFrame = boothPart.CFrame * CFrame.new(0, 0, 4) * CFrame.Angles(0, math.pi, 0)
+                        Camera.CameraType = Enum.CameraType.Scriptable
+                        Camera.CFrame = CFrame.new(LP.Character.HumanoidRootPart.Position + Vector3.new(0, 4, 6), boothPart.Position)
+                        task.wait(0.3)
+                        prompt.HoldDuration = 0 
+                        fireproximityprompt(prompt)
+                        task.wait(WaitTime)
+                        if _G.Running then performAction(); UsedLocations[locKey] = true end
+                        Camera.CameraType = Enum.CameraType.Custom
+                        task.wait(0.5)
+                        break 
+                    end
+                end
+            end
+        end)
+        if not foundBooth and _G.Running then serverHop(); task.wait(10) end
+    end
+end
+
+UserInputService.InputBegan:Connect(function(input, gp)
+    if not gp and input.KeyCode == Enum.KeyCode.K then
+        _G.Running = not _G.Running 
+        if _G.Running then lockUIVisible(); task.spawn(startFarming) 
+        else Camera.CameraType = Enum.CameraType.Custom end
+    end
+end)
+
+lockUIVisible()
+task.spawn(startFarming)
+LP.Idled:Connect(function()
+    if _G.Running then Vim:SendKeyEvent(true, Enum.KeyCode.Space, false, game) end
+end)
